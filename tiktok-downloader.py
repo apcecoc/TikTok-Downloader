@@ -1,4 +1,4 @@
-# __version__ = (1, 2, 1)
+__version__ = (1, 2, 0)
 
 #             █ █ ▀ █▄▀ ▄▀█ █▀█ ▀
 #             █▀█ █ █ █ █▀█ █▀▄ █
@@ -15,9 +15,10 @@
 # scope: hikka_min 1.2.10
 
 import aiohttp
-import os
 from telethon.tl.types import Message
+from telethon.utils import get_display_name
 from .. import loader, utils
+
 
 @loader.tds
 class TikTokDownloaderMod(loader.Module):
@@ -91,28 +92,17 @@ class TikTokDownloaderMod(loader.Module):
                                 with open(file_path, "wb") as file:
                                     file.write(await file_resp.read())
 
-                                # Проверка размера файла
-                                if file_resp.content_length is None or file_resp.content_length < 1:
-                                    await utils.answer(message, self.strings("error"))
-                                    return
-
                                 caption = (
                                     self.strings("video_success")
                                     if content_type == "video"
                                     else self.strings("audio_success")
                                 )
 
-                                # Отправка файла
                                 await message.client.send_file(
                                     message.peer_id,
                                     file_path,
                                     caption=caption,
                                 )
-
-                                # Удаление файла после отправки
-                                if os.path.exists(file_path):
-                                    os.remove(file_path)
-
                                 await message.delete()
                             else:
                                 await utils.answer(message, self.strings("error"))
