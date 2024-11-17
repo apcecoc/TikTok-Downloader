@@ -1,4 +1,4 @@
-__version__ = (1, 2, 1)
+# __version__ = (1, 2, 2)
 
 #             █ █ ▀ █▄▀ ▄▀█ █▀█ ▀
 #             █▀█ █ █ █ █▀█ █▀▄ █
@@ -21,15 +21,15 @@ from .. import loader, utils
 
 @loader.tds
 class TikTokDownloaderMod(loader.Module):
-    """Download TikTok videos and audio using API"""
+    """Скачивание видео и аудио из TikTok через API"""
 
     strings = {
         "name": "TikTokDownloader",
-        "processing": "🔄 <b>Fetching TikTok content...</b>",
-        "invalid_url": "❌ <b>Invalid TikTok URL provided.</b>",
-        "error": "❌ <b>Error occurred while processing your request.</b>",
-        "video_success": "🎥 <b>Video downloaded successfully:</b>",
-        "audio_success": "🎵 <b>Audio downloaded successfully:</b>",
+        "processing": "🔄 <b>Загружаю данные из TikTok...</b>",
+        "invalid_url": "❌ <b>Указана недействительная ссылка TikTok.</b>",
+        "error": "❌ <b>Произошла ошибка при обработке запроса.</b>",
+        "video_success": "🎥 <b>Видео успешно скачано:</b>",
+        "audio_success": "🎵 <b>Аудио успешно скачано:</b>",
     }
 
     strings_ru = {
@@ -43,12 +43,12 @@ class TikTokDownloaderMod(loader.Module):
 
     @loader.command(ru_doc="<Ссылка на TikTok> Скачать видео с TikTok")
     async def tiktokvid(self, message: Message):
-        """<TikTok Link> Download a TikTok video"""
+        """<Ссылка на TikTok> Скачать видео с TikTok"""
         await self._download_content(message, "video")
 
     @loader.command(ru_doc="<Ссылка на TikTok> Скачать аудио с TikTok")
     async def tiktokaudio(self, message: Message):
-        """<TikTok Link> Download TikTok audio"""
+        """<Ссылка на TikTok> Скачать аудио из TikTok"""
         await self._download_content(message, "audio")
 
     async def _download_content(self, message: Message, content_type: str):
@@ -102,6 +102,7 @@ class TikTokDownloaderMod(loader.Module):
                                     else self.strings("audio_success")
                                 )
 
+                                # Ожидание завершения отправки файла
                                 await message.client.send_file(
                                     message.peer_id,
                                     file_path,
