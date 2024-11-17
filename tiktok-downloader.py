@@ -1,4 +1,4 @@
-__version__ = (1, 1, 0)
+__version__ = (1, 2, 0)
 
 #             █ █ ▀ █▄▀ ▄▀█ █▀█ ▀
 #             █▀█ █ █ █ █▀█ █▀▄ █
@@ -42,14 +42,14 @@ class TikTokDownloaderMod(loader.Module):
         "_cls_doc": "Скачивает видео и аудио из TikTok через API",
     }
 
-    @loader.command(ru_doc="Скачать видео с TikTok")
+    @loader.command(ru_doc="<Ссылка на TikTok> Скачать видео с TikTok")
     async def tiktokvid(self, message: Message):
-        """Download a TikTok video"""
+        """<TikTok Link> Download a TikTok video"""
         await self._download_content(message, "video")
 
-    @loader.command(ru_doc="Скачать аудио с TikTok")
+    @loader.command(ru_doc="<Ссылка на TikTok> Скачать аудио с TikTok")
     async def tiktokaudio(self, message: Message):
-        """Download TikTok audio"""
+        """<TikTok Link> Download TikTok audio"""
         await self._download_content(message, "audio")
 
     async def _download_content(self, message: Message, content_type: str):
