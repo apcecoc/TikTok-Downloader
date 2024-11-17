@@ -1,4 +1,4 @@
-__version__ = (1, 2, 0)
+__version__ = (1, 2, 1)
 
 #             █ █ ▀ █▄▀ ▄▀█ █▀█ ▀
 #             █▀█ █ █ █ █▀█ █▀▄ █
@@ -18,7 +18,6 @@ import aiohttp
 from telethon.tl.types import Message
 from telethon.utils import get_display_name
 from .. import loader, utils
-
 
 @loader.tds
 class TikTokDownloaderMod(loader.Module):
@@ -91,6 +90,11 @@ class TikTokDownloaderMod(loader.Module):
                                 file_path = f"/tmp/{file_name}"
                                 with open(file_path, "wb") as file:
                                     file.write(await file_resp.read())
+
+                                # Проверка размера файла
+                                if file_resp.content_length is None or file_resp.content_length < 1:
+                                    await utils.answer(message, self.strings("error"))
+                                    return
 
                                 caption = (
                                     self.strings("video_success")
