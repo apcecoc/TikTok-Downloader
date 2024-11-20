@@ -15,8 +15,8 @@ __version__ = (1, 2, 0)
 # scope: hikka_min 1.2.10
 
 import aiohttp
+import os
 from telethon.tl.types import Message
-from telethon.utils import get_display_name
 from .. import loader, utils
 
 
@@ -98,11 +98,17 @@ class TikTokDownloaderMod(loader.Module):
                                     else self.strings("audio_success")
                                 )
 
+                                # Отправка файла
                                 await message.client.send_file(
                                     message.peer_id,
                                     file_path,
                                     caption=caption,
                                 )
+
+                                # Удаление файла после отправки
+                                if os.path.exists(file_path):
+                                    os.remove(file_path)
+
                                 await message.delete()
                             else:
                                 await utils.answer(message, self.strings("error"))
