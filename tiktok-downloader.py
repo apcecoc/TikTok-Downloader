@@ -1,4 +1,4 @@
-__version__ = (1, 2, 0)
+__version__ = (1, 2, 1)
 
 #             █ █ ▀ █▄▀ ▄▀█ █▀█ ▀
 #             █▀█ █ █ █ █▀█ █▀▄ █
@@ -75,7 +75,7 @@ class TikTokDownloaderMod(loader.Module):
 
                         downloads = data.get("downloadsUrl", {})
                         file_url = (
-                            downloads.get("video")
+                            downloads.get("video_standard")
                             if content_type == "video"
                             else downloads.get("music")
                         )
