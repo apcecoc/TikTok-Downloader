@@ -1,6 +1,6 @@
-__version__ = (1, 2, 2)
+__version__ = (1, 2, 3)
 
-#       █████  ██████   ██████ ███████  ██████  ██████   ██████ 
+#        █████  ██████   ██████ ███████  ██████  ██████   ██████ 
 #       ██   ██ ██   ██ ██      ██      ██      ██    ██ ██      
 #       ███████ ██████  ██      █████   ██      ██    ██ ██      
 #       ██   ██ ██      ██      ██      ██      ██    ██ ██      
@@ -18,6 +18,7 @@ __version__ = (1, 2, 2)
 
 import aiohttp
 import os
+import asyncio
 from telethon.tl.types import Message
 from .. import loader, utils
 
@@ -83,7 +84,7 @@ class TikTokDownloaderMod(loader.Module):
                             if not data.get("ok", False):
                                 raise Exception("API returned unsuccessful response")
 
-                            downloads = data.get("downloadsUrl", {})
+                            downloads = data.get("downloadUrls", {})
                             file_url = (
                                 downloads.get("video_standard")
                                 if content_type == "video"
@@ -93,7 +94,6 @@ class TikTokDownloaderMod(loader.Module):
                             if not file_url:
                                 raise Exception("No download URL found")
 
-                            # Скачивание файла
                             async with session.get(file_url) as file_resp:
                                 if file_resp.status == 200:
                                     file_name = file_url.split("/")[-1]
@@ -107,19 +107,17 @@ class TikTokDownloaderMod(loader.Module):
                                         else self.strings("audio_success")
                                     )
 
-                                    # Отправка файла
                                     await message.client.send_file(
                                         message.peer_id,
                                         file_path,
                                         caption=caption,
                                     )
 
-                                    # Удаление файла после отправки
                                     if os.path.exists(file_path):
                                         os.remove(file_path)
 
                                     await message.delete()
-                                    return  # Успешное завершение, выходим из цикла
+                                    return
                                 else:
                                     raise Exception("Failed to download file")
                         else:
@@ -128,7 +126,7 @@ class TikTokDownloaderMod(loader.Module):
                 attempt += 1
                 if attempt < max_retries:
                     await utils.answer(message, self.strings("error"))
-                    await utils.sleep(1)  # Небольшая пауза перед повторной попыткой
+                    await asyncio.sleep(1)
                 else:
                     await utils.answer(message, self.strings("max_retries"))
                 continue
