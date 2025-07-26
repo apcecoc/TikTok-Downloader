@@ -1,4 +1,4 @@
-__version__ = (1, 2, 3)
+__version__ = (1, 2, 4)
 
 #        █████  ██████   ██████ ███████  ██████  ██████   ██████ 
 #       ██   ██ ██   ██ ██      ██      ██      ██    ██ ██      
@@ -19,9 +19,9 @@ __version__ = (1, 2, 3)
 import aiohttp
 import os
 import asyncio
+import gc
 from telethon.tl.types import Message
 from .. import loader, utils
-
 
 @loader.tds
 class TikTokDownloaderMod(loader.Module):
@@ -31,19 +31,21 @@ class TikTokDownloaderMod(loader.Module):
         "name": "TikTokDownloader",
         "processing": "🔄 <b>Fetching TikTok content...</b>",
         "invalid_url": "❌ <b>Invalid TikTok URL provided.</b>",
-        "error": "❌ <b>Error occurred while processing your request. Retrying...</b>",
+        "error": "❌ <b>Error occurred while processing your request: {error}. Retrying...</b>",
         "max_retries": "❌ <b>Failed to download after 3 attempts.</b>",
         "video_success": "🎥 <b>Video downloaded successfully:</b>",
         "audio_success": "🎵 <b>Audio downloaded successfully:</b>",
+        "cleanup": "🧹 <b>Cleaned up temporary file and memory.</b>",
     }
 
     strings_ru = {
         "processing": "🔄 <b>Загружаю данные из TikTok...</b>",
         "invalid_url": "❌ <b>Указана недействительная ссылка TikTok.</b>",
-        "error": "❌ <b>Произошла ошибка при обработке запроса. Повторяю...</b>",
+        "error": "❌ <b>Произошла ошибка при обработке запроса: {error}. Повторяю...</b>",
         "max_retries": "❌ <b>Не удалось скачать после 3 попыток.</b>",
         "video_success": "🎥 <b>Видео успешно скачано:</b>",
         "audio_success": "🎵 <b>Аудио успешно скачано:</b>",
+        "cleanup": "🧹 <b>Очищены временный файл и память.</b>",
         "_cls_doc": "Скачивает видео и аудио из TikTok через API",
     }
 
@@ -75,58 +77,66 @@ class TikTokDownloaderMod(loader.Module):
         attempt = 0
 
         while attempt < max_retries:
+            session = None
             try:
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(api_url, headers=headers) as resp:
-                        if resp.status == 200:
-                            data = await resp.json()
+                session = aiohttp.ClientSession()
+                async with session.get(api_url, headers=headers) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
 
-                            if not data.get("ok", False):
-                                raise Exception("API returned unsuccessful response")
+                        if not data.get("ok", False):
+                            raise Exception("API returned unsuccessful response")
 
-                            downloads = data.get("downloadUrls", {})
-                            file_url = (
-                                downloads.get("video_standard")
-                                if content_type == "video"
-                                else downloads.get("music")
-                            )
+                        downloads = data.get("downloadUrls", {})
+                        file_url = (
+                            downloads.get("video_standard")
+                            if content_type == "video"
+                            else downloads.get("music")
+                        )
 
-                            if not file_url:
-                                raise Exception("No download URL found")
+                        if not file_url:
+                            raise Exception("No download URL found")
 
-                            async with session.get(file_url) as file_resp:
-                                if file_resp.status == 200:
-                                    file_name = file_url.split("/")[-1]
-                                    file_path = f"/tmp/{file_name}"
-                                    with open(file_path, "wb") as file:
-                                        file.write(await file_resp.read())
+                        async with session.get(file_url) as file_resp:
+                            if file_resp.status == 200:
+                                file_name = file_url.split("/")[-1]
+                                file_path = f"/tmp/{file_name}"
+                                with open(file_path, "wb") as file:
+                                    async for chunk in file_resp.content.iter_chunked(1024 * 1024): 
+                                        file.write(chunk)
 
-                                    caption = (
-                                        self.strings("video_success")
-                                        if content_type == "video"
-                                        else self.strings("audio_success")
-                                    )
+                                caption = (
+                                    self.strings("video_success")
+                                    if content_type == "video"
+                                    else self.strings("audio_success")
+                                )
 
-                                    await message.client.send_file(
-                                        message.peer_id,
-                                        file_path,
-                                        caption=caption,
-                                    )
+                                await message.client.send_file(
+                                    message.peer_id,
+                                    file_path,
+                                    caption=caption,
+                                )
 
-                                    if os.path.exists(file_path):
-                                        os.remove(file_path)
+                                if os.path.exists(file_path):
+                                    os.remove(file_path)
+                                    await utils.answer(message, self.strings("cleanup"))
 
-                                    await message.delete()
-                                    return
-                                else:
-                                    raise Exception("Failed to download file")
-                        else:
-                            raise Exception("API request failed")
+                                await message.delete()
+                                await session.close()
+                                gc.collect()
+                                return
+                            else:
+                                raise Exception(f"Failed to download file, status: {file_resp.status}")
+                    else:
+                        raise Exception(f"API request failed, status: {resp.status}")
             except Exception as e:
                 attempt += 1
                 if attempt < max_retries:
-                    await utils.answer(message, self.strings("error"))
+                    await utils.answer(message, self.strings("error").format(error=str(e)))
                     await asyncio.sleep(1)
                 else:
                     await utils.answer(message, self.strings("max_retries"))
-                continue
+            finally:
+                if session:
+                    await session.close()
+                gc.collect()  # Очистка памяти при ошибке
