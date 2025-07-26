@@ -139,4 +139,4 @@ class TikTokDownloaderMod(loader.Module):
             finally:
                 if session:
                     await session.close()
-                gc.collect()  # Очистка памяти при ошибке
+                gc.collect()
